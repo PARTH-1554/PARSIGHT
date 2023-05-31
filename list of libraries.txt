@@ -1,0 +1,12 @@
+import docx2txt
+from tkinter import Tk, filedialog, Canvas, Button, PhotoImage, Label, StringVar
+import spacy
+from spacy.matcher import Matcher
+import re
+from sklearn.metrics.pairwise import cosine_similarity
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from tabulate import tabulate
