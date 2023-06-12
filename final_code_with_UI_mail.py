@@ -9,11 +9,15 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from tabulate import tabulate
+#from tabulate import tabulate
 
+
+#load the English language model of SpaCy and initialize a matcher object.
 nlp = spacy.load('en_core_web_sm')
 matcher = Matcher(nlp.vocab)
 
+#This is a function that opens a file dialog for the user to select a DOCX file.
+# It then uses docx2txt to extract the text from the selected file and returns it as a string.
 def extract_text_from_doc():
     root = Tk()
     root.withdraw()
@@ -25,7 +29,8 @@ def extract_text_from_doc():
     else:
         print("No file selected.")
 
-
+#The pattern looks for two consecutive proper nouns (names).
+# If a match is found, it returns the matched span as the name.
 def extract_name(resume_text):
     nlp_text = nlp(resume_text)
     pattern = [{'POS': 'PROPN'}, {'POS': 'PROPN'}]
@@ -35,7 +40,8 @@ def extract_name(resume_text):
         span = nlp_text[start:end]
         return span.text
 
-
+# It uses a regular expression pattern to find phone numbers in various formats.
+# If a match is found, it returns the formatted phone number.
 def extract_mobile_number(text):
     phone = re.findall(re.compile(
         r'(?:(?:\+?([1-9]|[0-9][0-9]|[0-9][0-9][0-9])\s*(?:[.-]\s*)?)?(?:\(\s*([2-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9])\s*\)|([0-9][1-9]|[0-9]1[02-9]|[2-9][02-8]1|[2-9][02-8][02-9]))\s*(?:[.-]\s*)?)?([2-9]1[02-9]|[2-9][02-9]1|[2-9][02-9]{2})\s*(?:[.-]\s*)?([0-9]{4})(?:\s*(?:#|x\.?|ext\.?|extension)\s*(\d+))?'),
@@ -47,7 +53,8 @@ def extract_mobile_number(text):
         else:
             return number
 
-
+#It uses a regular expression pattern to find email addresses.
+# If a match is found, it returns the email address.
 def extract_email(email):
     email = re.findall("([^@|\s]+@[^@]+\.[^@|\s]+)", email)
     if email:
@@ -60,7 +67,7 @@ def extract_email(email):
 def extract_skills(resume_text):
     nlp_text = nlp(resume_text)
     tokens = [token.text for token in nlp_text if not token.is_stop]
-    data = pd.read_csv(r'F:\project\skills.csv')
+    data = pd.read_csv(r'C:\Users\Parth\Desktop\parsight_1\skills.csv')
     skills = list(data.columns.values)
     skillset = []
     for token in tokens:
@@ -77,7 +84,7 @@ def send_email(email, top_jobs):
     sender_email = 'parth.singhal21@pccoepune.org'
     receiver_email = quoted_mail
     subject = 'Email Subject'
-    message = "The top jobs for you are\n" + top_jobs[['JOBS']].to_string(index=False)
+    message = "The top jobs for you are\n" + top_jobs[['JOBS', 'similarity']].to_string(index=False, header=False,col_space=[60, 20])
     msg = MIMEMultipart()
     msg['From'] = sender_email
     msg['To'] = receiver_email
@@ -101,31 +108,34 @@ def send_email(email, top_jobs):
 
 def upload_document():
     resume_text = extract_text_from_doc()
+    resume_text= resume_text.lower()
+
     name = extract_name(resume_text)
     mobile_number = extract_mobile_number(resume_text)
     email = extract_email(resume_text)
     skills_user = extract_skills(resume_text)
-    skills_data = pd.read_csv(r'C:\Users\Parth\Desktop\parsight_1\ParSight_Dataset_merged.csv')
+    skills_data = pd.read_csv(r'C:\Users\Parth\Desktop\parsight_1\ParSight_Dataset_merged(Updated).csv')
     skills_user_str = ' '.join(skills_user)
     vectorizer = TfidfVectorizer()
     skills_job_vectorized = vectorizer.fit_transform(skills_data['SKILLS'])
     skills_user_vectorized = vectorizer.transform([skills_user_str])
     similarities = cosine_similarity(skills_user_vectorized, skills_job_vectorized)[0]
-    skills_data['similarity'] = similarities
+    skills_data['similarity'] = similarities * 100
     sorted_jobs = skills_data.sort_values('similarity', ascending=False)
     num_jobs = 5  # Number of top matching jobs to retrieve
     top_jobs = sorted_jobs.head(num_jobs)
-
+    top_jobs['similarity'] = top_jobs['similarity'].apply(lambda x: f'{x:.2f}%')
     # Update GUI labels with extracted information
     name_label.config(text="Name: " + name)
     mobile_label.config(text="Mobile number: " + mobile_number)
     email_label.config(text="Email: " + email)
     skills_label.config(text="Skills: " + ", ".join(skills_user))
-    table = tabulate(top_jobs[['JOBS', 'similarity']], headers=["Job Title", "Similarity"], showindex=False,tablefmt="presto")
-    top_jobs_label.config(text="\t\tTop Matching Jobs\n\n" + table)
+    table = top_jobs[['JOBS', 'similarity']].to_string(index=False, header=False,col_space=[60, 20])
+    top_jobs_label.config(text="Top Matching Jobs\n\n" + table)
 
     # Send email with top jobs
     send_email(email, top_jobs)
+    print(resume_text)
 
 
 window = Tk()
@@ -136,7 +146,7 @@ window.configure(bg="#FFFFFF")
 
 canvas = Canvas(
     window,
-    bg="#FFFFFF",
+    bg="#EAF3FA",
     height=840,
     width=1290,
     bd=0,
@@ -147,24 +157,35 @@ canvas.place(x=0, y=0)
 
 # Rest of your code...
 image_image_1 = PhotoImage(file=r"C:\Users\Parth\Desktop\build\assets\frame0\image_1.png")
-image_1 = canvas.create_image(400,400, image=image_image_1)
+image_1 = canvas.create_image(1200,100, image=image_image_1)
+canvas.create_text(
+    700.0,
+    40.0,
+    anchor="nw",
+    text="\n\nEmpowering Job Seekers and Employers \nAlike with Intelligent Resume Parsing",
+    fill="#0a0000",
+    font=("Outfit", 20 * -1)
+)
+
+image_image_2 = PhotoImage(file=r"C:\Users\Parth\Desktop\build\assets\frame0\image_2.png")
+image_2 = canvas.create_image(900,450, image=image_image_2)
 
 canvas.create_text(
-    271.0,
-    33.0,
+    700.0,
+    15.0,
     anchor="nw",
-    text="PARSIGHT",
-    fill="#FFFFFF",
-    font=("Inter SemiBold", 20 * -1)
+    text="\tPARSIGHT",
+    font=("Arial Black", 20 * -1)
 )
 
 upload_button_image = PhotoImage(file=r"C:\Users\Parth\Desktop\build\assets\frame0\button_1.png")
 upload_button = Button(
     image=upload_button_image,
-    borderwidth=0,
-    highlightthickness=0,
     command=upload_document,
-    relief="flat"
+    relief="flat",
+    highlightbackground="#EAF3FA",
+    highlightcolor="#EAF3FA"
+
 )
 upload_button.place(x=241.0, y=75.0, width=194.0, height=47.0)
 
@@ -185,6 +206,7 @@ top_jobs_label.place(x=23.0, y=260.0, anchor="nw")
 
 email_sent_label = Label(window, text="", font=("Inter Regular", 12), fg="green")
 email_sent_label.place(x=23.0, y=500.0, anchor="nw")
+
 
 
 window.mainloop()
