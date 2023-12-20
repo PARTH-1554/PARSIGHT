@@ -1,12 +1,17 @@
-import docx2txt
-from tkinter import Tk, filedialog, Canvas, Button, PhotoImage, Label, StringVar
-import spacy
-from spacy.matcher import Matcher
-import re
-from sklearn.metrics.pairwise import cosine_similarity
-import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from tabulate import tabulate
+# Libraries for file handling and processing
+import docx2txt  # Convert .docx files to text
+from tkinter import Tk, filedialog  # GUI for file selection
+from tabulate import tabulate  # Tabulate data for easy display
+
+# NLP Libraries
+import spacy  # Natural Language Processing library
+from spacy.matcher import Matcher  # Rule-based matching in spaCy
+import re  # Regular expressions for string matching and manipulation
+from sklearn.metrics.pairwise import cosine_similarity  # Compute cosine similarity for vectors
+import pandas as pd  # Data manipulation library
+from sklearn.feature_extraction.text import TfidfVectorizer  # TF-IDF vectorization
+
+# Email handling libraries
+import smtplib  # Simple Mail Transfer Protocol for sending emails
+from email.mime.text import MIMEText  # MIMEText for creating email messages
+from email.mime.multipart import MIMEMultipart  # MIMEMultipart for creating multipart emails
